@@ -20,7 +20,7 @@ class EncoderDecoder(nn.Module):
 		noised_image = self.noise([encoded_image, image])
 		decoded_message = self.decoder(noised_image)
 		return encoded_image, noised_image, decoded_message
-
+		
 
 class EncoderDecoder_Diffusion(nn.Module):
 	'''

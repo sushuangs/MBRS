@@ -1,7 +1,6 @@
 from .Encoder_MP_Decoder import *
 from .Discriminator import Discriminator
 
-
 class Network:
 
 	def __init__(self, H, W, message_length, noise_layers, device, batch_size, lr, with_diffusion=False,
@@ -29,7 +28,6 @@ class Network:
 		self.label_encoded = torch.full((batch_size, 1), 0, dtype=torch.float, device=device)
 
 		# optimizer
-		print(lr)
 		self.opt_encoder_decoder = torch.optim.Adam(
 			filter(lambda p: p.requires_grad, self.encoder_decoder.parameters()), lr=lr)
 		self.opt_discriminator = torch.optim.Adam(self.discriminator.parameters(), lr=lr)
@@ -90,12 +88,11 @@ class Network:
 
 			g_loss.backward()
 			self.opt_encoder_decoder.step()
-
 			# psnr
-			psnr = kornia.losses.psnr_loss(encoded_images.detach(), images, 2)
+			psnr = -kornia.losses.psnr_loss(encoded_images.detach(), images, 2)
 
 			# ssim
-			ssim = 1 - 2 * kornia.losses.ssim(encoded_images.detach(), images, window_size=5, reduction="mean")
+			ssim = 1 - 2 * kornia.losses.ssim_loss(encoded_images.detach(), images, window_size=5, reduction="mean")
 
 		'''
 		decoded message error rate
@@ -135,10 +132,10 @@ class Network:
 			self.opt_encoder_decoder.step()
 
 			# psnr
-			psnr = kornia.losses.psnr_loss(encoded_images.detach(), images, 2)
+			psnr = -kornia.losses.psnr_loss(encoded_images.detach(), images, 2)
 
 			# ssim
-			ssim = 1 - 2 * kornia.losses.ssim(encoded_images.detach(), images, window_size=5, reduction="mean")
+			ssim = 1 - 2 * kornia.losses.ssim_loss(encoded_images.detach(), images, window_size=5, reduction="mean")
 
 		'''
 		decoded message error rate
@@ -197,10 +194,10 @@ class Network:
 					 self.decoder_weight * g_loss_on_decoder
 
 			# psnr
-			psnr = kornia.losses.psnr_loss(encoded_images.detach(), images, 2)
+			psnr = -kornia.losses.psnr_loss(encoded_images.detach(), images, 2)
 
 			# ssim
-			ssim = 1 - 2 * kornia.losses.ssim(encoded_images.detach(), images, window_size=5, reduction="mean")
+			ssim = 1 - 2 * kornia.losses.ssim_loss(encoded_images.detach(), images, window_size=5, reduction="mean")
 
 		'''
 		decoded message error rate

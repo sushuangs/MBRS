@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from utils import *
 from network.Network import *
-
+from early_stopping_pytorch.early_stopping import EarlyStopping
 from utils.load_train_setting import *
 
 '''
@@ -12,10 +12,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 network = Network(H, W, message_length, noise_layers, device, batch_size, lr, with_diffusion, only_decoder)
 
-train_dataset = MBRSDataset(os.path.join(dataset_path, "train"), H, W)
+train_dataset = MBRSDataset(os.path.join(dataset_path, "train/"), H, W)
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
 
-val_dataset = MBRSDataset(os.path.join(dataset_path, "validation"), H, W)
+val_dataset = MBRSDataset(os.path.join(dataset_path, "validation/"), H, W)
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
 
 if train_continue:
@@ -25,10 +25,13 @@ if train_continue:
 
 print("\nStart training : \n\n")
 
+path_model = result_folder + "models/"
+early_stopping = EarlyStopping(patience=50, verbose=True, path=path_model)
+
 for epoch in range(epoch_number):
 
 	epoch += train_continue_epoch if train_continue else 0
-
+	
 	running_result = {
 		"error_rate": 0.0,
 		"psnr": 0.0,
@@ -47,15 +50,15 @@ for epoch in range(epoch_number):
 	train
 	'''
 	num = 0
-	for _, images, in enumerate(train_dataloader):
-		image = images.to(device)
+	for _, data in enumerate(train_dataloader):
+		image = data[0].to(device)
 		message = torch.Tensor(np.random.choice([0, 1], (image.shape[0], message_length))).to(device)
 
 		result = network.train(image, message) if not only_decoder else network.train_only_decoder(image, message)
 
 		for key in result:
 			running_result[key] += float(result[key])
-
+		
 		num += 1
 
 	'''
@@ -92,8 +95,8 @@ for epoch in range(epoch_number):
 	saved_all = None
 
 	num = 0
-	for i, images in enumerate(val_dataloader):
-		image = images.to(device)
+	for i, data in enumerate(val_dataloader):
+		image = data[0].to(device)
 		message = torch.Tensor(np.random.choice([0, 1], (image.shape[0], message_length))).to(device)
 
 		result, (images, encoded_images, noised_images, messages, decoded_messages) = network.validation(image, message)
@@ -126,7 +129,8 @@ for epoch in range(epoch_number):
 	'''
 	save model
 	'''
-	path_model = result_folder + "models/"
-	path_encoder_decoder = path_model + "EC_" + str(epoch) + ".pth"
-	path_discriminator = path_model + "D_" + str(epoch) + ".pth"
-	network.save_model(path_encoder_decoder, path_discriminator)
+	early_stopping(-val_result['psnr'] / num, network, epoch)
+	if early_stopping.early_stop:
+		print("Early stopping")
+		break
+

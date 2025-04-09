@@ -1,19 +1,19 @@
 {
-  "project_name": "MBRS",
-  "with_diffusion": false,
+  "project_name": "MBRS_gtos_psnr",
+  "with_diffusion": true,
   "only_decoder": false,
-  "epoch_number": 101,
-  "batch_size": 4,
+  "epoch_number": 200,
+  "batch_size": 32,
   "train_continue": false,
   "train_continue_path": "/",
   "train_continue_epoch": 0,
-  "dataset_path": "datasets/",
+  "dataset_path": "/data/experiment/data/gtos128_500_copy",
   "save_images_number": 4,
   "H": 128,
   "W": 128,
-  "message_length": 64,
+  "message_length": 30,
   "lr": 1e-3,
   "noise_layers": [
-    "Combined([JpegMask(50),Jpeg(50),Identity()])"
+    "Identity()"
   ]
 }
